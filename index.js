@@ -1,6 +1,8 @@
 import mongoose, { Schema } from "mongoose";
 import express, { urlencoded } from "express"
 import dotenv from "dotenv"
+import { validate } from "./zod.middleware.js";
+import { userValidatorSchema } from "./zod.validator.js";
 
 dotenv.config({path:"./.env"})
 
@@ -25,7 +27,7 @@ async function connect () {
 connect()
 
 
-const userSchema = new Schema({
+ const userSchema = new Schema({
     name:String,
     email:String,
     password:String
@@ -36,11 +38,11 @@ const User = mongoose.model("User",userSchema)
 
 // create,read,update,delete
 
-app.post("/create-user",async function createUser (req,res) {
+app.post("/create-user", validate(userValidatorSchema), async function createUser (req,res) {
      try {
         const {name,email,password} = req.body
         const user = await User.create({name,email,password})
-        return res.status(400).json({message:"ok",user})
+        return res.status(200).json({message:"ok",user})
      } catch (error) {
         console.log(error);
      }
@@ -118,11 +120,6 @@ app.delete("/delete/:id",async function (req,res) {
     }
     
 })
-
-
-
-
-
 
 
 app.listen(3333,()=> {
