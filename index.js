@@ -3,8 +3,11 @@ import express, { urlencoded } from "express"
 import dotenv from "dotenv"
 import { validate } from "./zod.middleware.js";
 import { userValidatorSchema } from "./zod.validator.js";
+ import { userVerificationMailTemplate } from "./mail.template.js";
+import { sendEmailWithNodeMailer } from "./node-mailer.js";
 
-dotenv.config({path:"./.env"})
+
+ dotenv.config({path:"./.env"})
 
 
 const app = express()
@@ -17,8 +20,8 @@ app.use(urlencoded())
 // db coonection
 async function connect () {
      try {
-       await mongoose.connect(`${process.env.MONGO_URI}/${process.env.DB_NAME}`)
-        console.log("db connectd");
+      const connectionInstance = await mongoose.connect(`${process.env.MONGO_URI}/${process.env.DB_NAME}`)
+        console.log("db connectd",connectionInstance.connection.host);
      } catch (error) {
         console.log(error);
         
@@ -42,6 +45,14 @@ app.post("/create-user", validate(userValidatorSchema), async function createUse
      try {
         const {name,email,password} = req.body
         const user = await User.create({name,email,password})
+        const {html} = userVerificationMailTemplate(name,'https://google.com')
+       const resoponse = await sendEmailWithNodeMailer({
+           to:email,
+           subject:"user verification email",
+           html
+        })
+        console.log("mail sent",resoponse);
+        
         return res.status(200).json({message:"ok",user})
      } catch (error) {
         console.log(error);
